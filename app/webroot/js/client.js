@@ -1,40 +1,23 @@
-var trigger = "updateContent";
-host = "push.notification.com:8000";
-conn = new WebSocket("ws://"+host+"/");
-conn.onmessage = function(evt) {
-// Make an Ajax call to the server to update the content
-    if (evt.data == "update"){
-// Call the callback function when there is an update
-        window[trigger]();
-    }
-};
+var git_client = http.createClient(80,"api.github.com");
+var git_event_emitter = new events.EventEmitter();
 
-conn.onerror = function() {
-};
+function get_activities(){
+    var get_sha =git_client.request("GET","/usr/keys");
+    var request =git_client.request("GET","/repos/:user/:repo/git/commits/:sha", {"host": "api.github.com"});
 
-conn.onclose = function() {
-    conn = false;
-};
+    request.addListener("response", function(response) {
+        var body = "";
+        response.addListener("data", function(data) {
+            body += data;
+        });
 
-conn.onopen = function() {
-//        alert("You are connected");
-    postMessage("You are connected");
-};
-function updateContent()
-{
-    $.ajax({
-        type: "POST",
-        url: "/phpserver/pages/get",
-        data: [],
-        error: function(qXHR, textStatus, errorThrown){
-            postMessage("There is an error while sending");
-        },
-        success: function(data){
-            if (data.res == "true"){
-                postMessage(data.data);
+        response.addListener("end", function() {
+            var tweets = JSON.parse(body);
+            if(tweets.length > 0) {
+                git_event_emitter.emit("commits", commits);
             }
-
-            postMessage("Update new message");
-        }
+        });
     });
+    request.close();
 }
+setInterval(get_tweets, 5000);

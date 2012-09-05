@@ -5,6 +5,7 @@ class NotificationsController extends AppController {
     }
     public function view() {
 
+
     }
 
 }
